@@ -27,6 +27,7 @@ import {
   getDynamicPhase2Questions,
   getDynamicPhase3Questions
 } from './data/mbtiQuizData';
+import { PERSONALITY_DETAILS } from './data/personalityDetailData';
 
 
 // 64-Type Suffix Information (A/O, H/C)
@@ -61,6 +62,108 @@ const SUFFIX_64_INFO = {
   }
 };
 
+const INFERIOR_ASPIRATION_DETAILS = {
+  Se: {
+    name: "Se (外倾感觉)",
+    role: "感觉劣势 - 感官绽放与肢体向往",
+    A: "您深知自己对具体的感官细节与当下动作比较笨拙，但您内心深处渴望和向往那些在大自然或肢体运动中展现出极致野性与物理掌控的人。您渴望接纳当下的光影与现实质感，试图走出脑海中的抽象模型，开启真正的感官绽放。这代表您的第四功能已开启“觉醒与整合”通道，逐渐接纳真实的物理实存。",
+    B: "您目前依然高度依赖脑海中的抽象未来与精神图景，不太羡慕甚至冷淡看待那种纯粹的感官竞技与当下肉体释放。您宁愿在概念深处挖掘，保持与物理环境的防御性隔离。这表明您的第四功能仍处于潜伏状态，倾向于以第一功能Ni（内倾直觉）作为完全的防御阵地。"
+  },
+  Ne: {
+    name: "Ne (外倾直觉)",
+    role: "直觉劣势 - 创意大爆发与灵性向往",
+    A: "虽然您习惯了经验的平稳和秩序，但您内心十分向往天马行空的灵感爆发，羡慕那些能在脑海中瞬间涌现无数跨界奇思妙想的人。您渴望打破常规规矩，拥抱无限的创造力与可能性。这代表您的第四功能正在挣扎成长，您开始渴望摆脱经验的囚笼，探索未知的多元未来。",
+    B: "您目前依然极度看重平稳经验与历史秩序，并不羡慕过于跳跃和不确定性的灵感大爆发。您宁愿把生活维系在可靠的常轨上，对漫无边际的脑洞保持本能的安全距离。这显示出您的第四功能Ne仍受到主导Si（内倾感觉）的强力压制，以规避不确定性风险。"
+  },
+  Si: {
+    name: "Si (内倾感觉)",
+    role: "感觉劣势 - 历史温情与精细秩序向往",
+    A: "您平日习惯了追逐远大的宏观理念与未知变数，但您内心深处极度渴望拥有规律、自律、安稳的日常秩序，羡慕能打理好每一处生活细节的人。您渴望从历史温情与精致秩序中获得踏实的归属感。这表明您在长途跋涉的脑洞狂奔后，灵魂开始寻求Si的稳健落地与身体保养的温柔归宿。",
+    B: "您目前仍旧全心投入在追求未来的各种新奇脑洞与前沿设想中，并不羡慕一成不变的平稳和繁琐的细节日常。您认为那种精致 of 自律与守旧有些枯燥，宁愿在不确定性中继续狂奔。这显示您的第四功能Si还在潜伏，您仍处于完全的Ne直觉狂欢期。"
+  },
+  Ni: {
+    name: "Ni (内倾直觉)",
+    role: "直觉劣势 - 本质洞察与宏观定力向往",
+    A: "虽然您极具现时实干精神与感官掌控，但您内心深处渴望着能在一瞬间看透世事规律、洞察事物隐藏本质的宏观远见。您深度羡慕和向往精神世界深邃、能在本质层面不被外界迷惑的智者。这表明您渴望在繁忙的现实捕捉中沉淀下来，整合Ni的深度洞察力，实现心智的深刻升华。",
+    B: "您目前依然相信眼见为实的物理事实、即时的商业红利与可落地的实战行动，并不羡慕或渴望过于玄虚的精神远景或深邃的哲学宿命感。您认为当下抓得住的才是最真切的。这说明您的第四功能Ni被Se（外倾感觉）主导的物理防线彻底遮蔽，心智仍聚焦于即时物质世界。"
+  },
+  Fe: {
+    name: "Fe (外倾情感)",
+    role: "情感劣势 - 集体融洽与情感共鸣向往",
+    A: "作为冷静客观的思考者，您内心深处却极度渴望建立温暖、真诚的群体情感确认与融洽连接，羡慕能如春风般关怀他人并获得大家喜爱的社交磁石。这正是您试图打破独立心智枷锁、拥抱情感温度的时刻。这代表您的第四功能Fe正在悄然复苏，试图走出冰冷的逻辑孤岛，走向爱与连接。",
+    B: "您目前依然将冷澈理智的边界和独立解构视作最高法则，对和稀泥的温暖社交、情感客套保持冷淡与排斥，不认为那种过度的合群情感有何价值。您宁愿在独立心智中自得其乐。这表明您的第四功能Fe仍处于被主导Ti（内倾思考）严密隔离的封印期。"
+  },
+  Fi: {
+    name: "Fi (内倾情感)",
+    role: "情感劣势 - 灵魂本真与自我坚守向往",
+    A: "在高效推进客观指标的战场上，您内心深处极其向往和羡慕那些能毫无保留、全然忠于自我灵魂底色和本真情感的人。您渴望获得一片不被外界考核、利益最大化绑架的心灵净土，实现真正的自我一致。这说明您的第四功能Fi在您的铁血外表下已种下渴望的种子，心智正向本真本心回归。",
+    B: "您目前依旧以客观效率、资源配置和客观战绩为主要信条，并不羡慕过于感性、主观的灵魂道德净土。您认为在这个利弊世界中，个人的道德净化可能只是一种不成熟的奢侈品。这表明您的第四功能Fi仍被强大的Te（外倾思考）绩效指标完全遮蔽。"
+  },
+  Ti: {
+    name: "Ti (内倾思考)",
+    role: "思考劣势 - 逻辑精密与自洽模型向往",
+    A: "在人际连接与情感共鸣的奔波中，您内心深处向往着建立起极其严密、不受人情干扰的底层自洽逻辑体系，羡慕理智冷静、能够把概念公式化拆解的理智极客。您渴望用纯粹的理性来厘清生活。这表明您的第四功能Ti正在指引您在泛滥的情感纽带中寻求冷静刹车，重构心智底层的独立逻辑支柱。",
+    B: "您目前依然将群体的温情、社会的价值与情感共振置于第一要义，并不羡慕冰冷自洽的纯逻辑模型。您认为如果失去了情感与人文的温度，再精确的逻辑也只是空洞冷漠的符号游戏。这表明您的第四功能Ti仍为Fe（外倾情感）人际主导下的配角，尚未走入独立的理性建构。"
+  },
+  Te: {
+    name: "Te (外倾思考)",
+    role: "思考劣势 - 硬核推进与决断力量向往",
+    A: "您深怀内心的道德本真与纯粹精神，但内心又极其渴望拥有一套高效整理资源、杀伐决断、将设想付诸硬硬核现实的决断推进力。您深深羡慕那些能在现实商场中雷厉风行、建立强力规则的执行领袖。这表明您的第四功能Te正在对您发出召唤，指引您克服内耗、将内倾情感的价值追求彻底外倾落地。",
+    B: "您目前依然将内心的精神世界、自我真诚与道德操守看作最后底线，对于刚硬冷酷、唯利是图的现实推进与强权手段感到天然排斥。您宁愿死守内心价值，也不愿变成一架冰冷的执行机器。这说明您的第四功能Te仍被Fi（内倾情感）的主观净土排斥在核心圈层之外。"
+  }
+};
+
+const DAEMON_TAKEOVER_DETAILS = {
+  Si: {
+    name: "Si (内倾感觉)",
+    role: "第八魔鬼功能 - 经验创伤退缩与细节折磨",
+    A: "在重大情感崩溃或自尊粉碎的打击下，您极易启动毁灭性的魔鬼退缩反应。您的Ni主导功能彻底失灵，转而被Si接管——疯狂翻扯陈年旧账、翻查过去的痛苦印记与细节，用自残式的作息折磨或极端顽固死板的经验教条来惩罚自己与对方，陷入陈年创伤的阴郁深谷。这代表您在极端压力下具有极高的魔鬼功能易感性，极易由于第八功能瞬间篡夺第一功能的位置，展现出阴郁的黑化毁灭力。",
+    B: "哪怕经历信念坍塌，您仍能顽强坚守精神的宏观走向与未来转机，依靠底线理性或长远视野进行自我重构，不容易被过去的琐碎创伤印记和负面经验长久折磨。您对第八功能Si的篡位保持了出色的心理免疫力和稳定性，在逆境下能够维持主导心智的健全性。"
+  },
+  Se: {
+    name: "Se (外倾感觉)",
+    role: "第八魔鬼功能 - 感官失控狂欢与物理破坏",
+    A: "在精神支柱完全撕裂的极端困境下，您的Ne灵感与抽象构想会瞬间死机，转而被Se魔鬼彻底黑化接管。您会陷入暴饮暴食、失控纵欲、物质依赖或不计后果的疯狂物理冒险中，用最原始、极端的躯体快感和物理破坏欲去碾碎脑海中的巨大痛苦，甚至反噬您本想守护的事物。这表示在面临深重变故时，您的第八功能Se极易暴走篡位，展现出玉石俱焚的狂狂暴能量。",
+    B: "面临重创时，您能坚持寻找心智出路，倾向于通过转移注意力、寻求新意念、阅读或逻辑自省来疗愈自我，不容易让狂暴的感官冲动和躯体放纵成为您失控夺权的黑暗代理人。这显示了您对Se魔鬼的良好免疫能力，在逆境中依然能保持认知主线的稳固。"
+  },
+  Ni: {
+    name: "Ni (内倾直觉)",
+    role: "第八魔鬼功能 - 宿命论黑暗深渊与阴谋直觉",
+    A: "当多年维系的生活秩序与常规防线被彻底摧毁时，您的Si规律将崩溃，转而被冷酷宿命论的Ni接管。您会坚信某种毁灭性的黑暗命运早已注定，认为世界充满了欺骗与敌意的阴谋，用极端的虚无主义和阴谋直觉将自己与世界彻底隔离，彻底颠覆了平日脚踏实地的防御方式。这代表您在重大变故下极易黑化，被第八功能Ni支配而陷入终极宿命论的黑洞。",
+    B: "即便常规防线崩溃，您仍会死死抱住脚踏实地的行动规程与客观积累来寻求自救，依靠可以触摸的现实经验。您不让自己陷入没有数据依托的黑暗命运臆测或荒诞宿命论泥潭，对第八功能Ni的夺权有着出色的心理抵抗力。"
+  },
+  Ne: {
+    name: "Ne (外倾直觉)",
+    role: "第八魔鬼功能 - 灾难可能性臆测与脑洞迫害",
+    A: "在感情毁灭或信念触礁的深重打击下，您日常引以为傲的Se掌控力与实操推进会完全失效，取而代之的是Ne阴谋发散。您的大脑会疯狂泛滥出各种毫无现实依据的‘最坏灾难妄想、受害者阴谋和荒谬可能’，坚信身边的环境都在针对您，陷入发散的无底深渊，将魔鬼功能推向了王座。这显示您在高压变故下对Ne黑化有着极高的敏感度，极易丧失现实感。",
+    B: "在重创之下，您仍强迫自己盯住具体的眼前实存与现实物理动作，通过实际细节解决眼下的危机。您不让自己在毫无依据的荒诞脑洞与灾难假说中发散内耗，这证明您对第八功能Ne的篡权威胁有着极强的防范能力，心智结构不易被阴谋论带偏。"
+  },
+  Fi: {
+    name: "Fi (内倾情感)",
+    role: "第八魔鬼功能 - 黑化道德审判与毁灭性反击",
+    A: "在经历极端背叛、人际崩溃或道德信仰撕裂后，您惯常的Ti理性与隔离机制可能发生爆裂，转而被Fi黑化魔鬼夺权。您会变得极度偏执、任性且充满玉石俱焚的道德审判欲，撕破所有伪善伪饰，用最具毁灭性、自毁式的反击去审判和惩罚虚伪的群体。这表明您极具Fi黑化易感度，人在遭遇情感变故时会把第八功能Fi摆到第一主导位置，展现出极具杀伤力的本真复仇暴风雨。",
+    B: "即便情感信念坍塌，您仍会极力通过冰冷的理智进行及时止损，划清逻辑界限，维持冷漠隔离的安全距离，坚决不让自己被情绪的暴风雨和毁灭性玉石俱焚所吞噬。这表明您具备优秀的理智隔离结构，能够强力阻断第八功能Fi的狂热接管。"
+  },
+  Fe: {
+    name: "Fe (外倾情感)",
+    role: "第八魔鬼功能 - 假面情感操弄与道德勒索",
+    A: "当您的效率防线（Te）和事业大局面临毁灭性破产时，您可能会彻底黑化，脱下冷静的面具，暴露出Fe魔鬼的情感操弄姿态。您会歇斯底里地利用假意示弱、情感道德勒索和群体情绪的假面操弄，玩弄人际生态，反噬和拉所有人一起下水，以此保护残存的自尊。这代表您在重大逆境下对Fe黑化具有极高的易感性，极易以情感勒索代替效率管理。",
+    B: "即便事业或大局坍塌，您也只会站在利弊、责任和法律框架下硬挺或体面离场，绝不屑于利用虚假伪善的眼泪、假面温情或群体舆论去进行下作的情感操弄与报复。这表明您的第八功能Fe受到理智大局观的牢固掌控，难以轻易颠覆。"
+  },
+  Ti: {
+    name: "Ti (内倾思考)",
+    role: "第八魔鬼功能 - 逻辑利刃肢解与冷酷审判",
+    A: "在自尊被彻底粉碎、感情遭遇毁灭性重创后，您平日真诚与人为善的Fi价值坚守可能会彻底碎裂，转而被Ti冷酷理智利刃接管。您会瞬间黑化为一个绝对利己、毫无情感温度的精密机器，使用最尖酸刻薄、绝对严密的解构逻辑，以精准无情的手法去刺痛并肢解对方的情感软肋，展现出魔鬼替代英雄的恐怖心智姿态。这表明您对Ti黑化易感度极高，高压下会展现出极度的冷血残酷。",
+    B: "哪怕内心千疮百孔，您也绝对无法让自己变成一个毫无温情底线、只懂用冷血逻辑去摧毁和伤害他人的心智魔鬼。您会固守内心深处本真的善意防线，宁可抱憾离场，这也证明您的核心Fi功能极其稳固，不易被第八功能Ti实施心智篡权。"
+  },
+  Te: {
+    name: "Te (外倾思考)",
+    role: "第八魔鬼功能 - 冷酷强权碾碎与行政清除",
+    A: "当遭遇极其沉重的人际决裂或尊严剥夺变故时，您平日温和合群的Fe情感底色可能会瞬间蒸发，Te铁血魔鬼彻底苏醒夺权。您会彻底撕下伪装，动用一切冷硬的行政规则、强权手腕和客观惩罚工具，以最高效、最残忍的方式将对方从生活和社会中清除粉碎，彻底用铁血强权掩盖一切温情。这代表您在受到毁灭性重创时会强行把第八功能Te顶上王座，展现出冷酷的执行碾碎力量。",
+    B: "即使关系或自尊被摧毁，您也绝不屑于利用强权、冷血的行政手段或冷酷的组织规则去毁灭他人，仍会尽量顾全彼此最后的体面和善意尊严。这表明您的第八功能Te受Fe主导情感大局的和谐约束，很难成为实施冷血打击的魔鬼黑面具。"
+  }
+};
+
 export default function App() {
   const [screen, setScreen] = useState('welcome'); // 'welcome' | 'quiz' | 'result'
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -82,7 +185,7 @@ export default function App() {
     "🔬 心智探测模块已就绪，正在准备捕捉第一层级基本倾向..."
   ]);
 
-  // Milestone levels: 25 -> 50 -> 100 -> 150
+  // Milestone levels: 25 -> 50 -> 100
   const [targetLength, setTargetLength] = useState(25);
 
   // States to persist adaptive parameters determined in Phase 2 & 3
@@ -101,7 +204,7 @@ export default function App() {
   };
 
   const handleContinueTesting = () => {
-    const nextTarget = targetLength === 25 ? 50 : targetLength === 50 ? 100 : 150;
+    const nextTarget = targetLength === 25 ? 50 : 100;
     setTargetLength(nextTarget);
     
     // Generate more questions from current targetLength to nextTarget
@@ -113,7 +216,7 @@ export default function App() {
   };
 
   const handleContinueFromResults = () => {
-    const nextTarget = targetLength === 25 ? 50 : targetLength === 50 ? 100 : 150;
+    const nextTarget = targetLength === 25 ? 50 : 100;
     setTargetLength(nextTarget);
     
     // Generate more questions from current targetLength to nextTarget
@@ -185,14 +288,14 @@ export default function App() {
       // Phase 1 finished! Generate Phase 2 (Adaptive Probing + Political Spectrum)
       generatePhase2Questions();
       hasTransitioned = true;
-    } else if (currentQuestionIndex === 7) {
+    } else if (currentQuestionIndex === 8) {
       // Phase 2 finished! Generate Phase 3 (Shadow & Stress Probing)
       generatePhase3Questions();
       hasTransitioned = true;
-    } else if (currentQuestionIndex === 11) {
+    } else if (currentQuestionIndex === 12) {
       // Phase 3 finished! Dynamically append procedural questions to reach targetLength (initially 25)
-      if (activeQuestions.length === 12) {
-        const moreQs = generateProceduralQuestions(12, targetLength, axesState.axis1, axesState.axis2, shadowState, activeQuestions);
+      if (activeQuestions.length === 13) {
+        const moreQs = generateProceduralQuestions(13, targetLength, axesState.axis1, axesState.axis2, shadowState, activeQuestions);
         setActiveQuestions([...activeQuestions, ...moreQs]);
       }
       hasTransitioned = true;
@@ -205,7 +308,7 @@ export default function App() {
     } else {
       // Reached the end of current active questions!
       if (currentQuestionIndex === targetLength - 1) {
-        if (targetLength >= 150) {
+        if (targetLength >= 100) {
           calculateFinalResults();
         }
       } else {
@@ -235,7 +338,7 @@ export default function App() {
     return scores;
   };
 
-  // Generate Phase 2 (Adaptive Probing - 4 questions) dynamically based on Phase 1 scores
+  // Generate Phase 2 (Adaptive Probing - 5 questions) dynamically based on Phase 1 scores
   const generatePhase2Questions = () => {
     const currentScores = computeIntermediateScores(answers);
     
@@ -253,9 +356,20 @@ export default function App() {
     // Pick top 2 most conflicted axes
     const conflictedAxis1 = axesConflicts[0].axis;
     const conflictedAxis2 = axesConflicts[1].axis;
+
+    // Find the closest Critic axis (Ti_vs_Te, Fi_vs_Fe, Ni_vs_Ne, Si_vs_Se)
+    const criticConflicts = [
+      { axis: "Ti_vs_Te", diff: Math.abs(currentScores.Ti - currentScores.Te) },
+      { axis: "Fi_vs_Fe", diff: Math.abs(currentScores.Fi - currentScores.Fe) },
+      { axis: "Ni_vs_Ne", diff: Math.abs(currentScores.Ni - currentScores.Ne) },
+      { axis: "Si_vs_Se", diff: Math.abs(currentScores.Si - currentScores.Se) }
+    ];
+    criticConflicts.sort((a, b) => a.diff - b.diff);
+    const conflictedCriticAxis = criticConflicts[0].axis;
+
     setAxesState({ axis1: conflictedAxis1, axis2: conflictedAxis2 });
 
-    const p2Selected = getDynamicPhase2Questions(activeQuestions, conflictedAxis1, conflictedAxis2);
+    const p2Selected = getDynamicPhase2Questions(activeQuestions, conflictedAxis1, conflictedAxis2, conflictedCriticAxis);
 
     // Append to active questions
     const updatedQuestions = [...activeQuestions.slice(0, 4), ...p2Selected];
@@ -313,7 +427,7 @@ export default function App() {
 
     const p3Selected = getDynamicPhase3Questions(activeQuestions, shadowTargets);
 
-    const updatedQuestions = [...activeQuestions.slice(0, 8), ...p3Selected];
+    const updatedQuestions = [...activeQuestions.slice(0, 9), ...p3Selected];
     setActiveQuestions(updatedQuestions);
     setShadowState(shadowTargets);
 
@@ -371,8 +485,11 @@ export default function App() {
         }
       });
 
+      // Curated adaptive questions (Phase 1, 2, 3) carry 3x weight leverage to prevent noise dilution in long tests
+      const multiplier = (q.phase === 1 || q.phase === 2 || q.phase === 3) ? 3.0 : 1.0;
+
       Object.keys(tempMax).forEach(func => {
-        maxPossibleScores[func] += tempMax[func];
+        maxPossibleScores[func] += tempMax[func] * multiplier;
       });
 
       const selectedOptionIds = answers[q.id] || [];
@@ -381,7 +498,7 @@ export default function App() {
         if (option) {
           if (option.weights) {
             Object.keys(option.weights).forEach(func => {
-              userRawScores[func] += option.weights[func];
+              userRawScores[func] += option.weights[func] * multiplier;
             });
           }
           if (option.political) {
@@ -410,7 +527,8 @@ export default function App() {
       typeFits.push({
         type: typeKey,
         fitScore: Math.round(fitScore * 10) / 10,
-        ...typeConfig
+        ...typeConfig,
+        ...(PERSONALITY_DETAILS[typeKey] || {})
       });
     });
 
@@ -465,7 +583,7 @@ export default function App() {
     // --- 2D Political Spectrum Calculations ---
     // Note: Coordinates from all closed-ended political questions (including Phase 2 and all Phase 4 procedural questions) 
     // are now automatically and elegantly accumulated in the main activeQuestions scoring loop above.
-    // This supports multi-stage test scaling (25, 50, 100, 150 questions) without double-counting.
+    // This supports multi-stage test scaling (25, 50, 100 questions) without double-counting.
 
     if (politicalInputsCount > 0) {
       econCoord = Math.round(econCoord / politicalInputsCount);
@@ -894,9 +1012,9 @@ export default function App() {
                 <span className="text-indigo-400 font-display font-semibold uppercase tracking-wider">
                   {currentQuestionIndex < 4 
                     ? "阶段 I: 基础场景解构" 
-                    : currentQuestionIndex < 8 
+                    : currentQuestionIndex < 9 
                       ? "阶段 II: 自适应分流探测" 
-                      : currentQuestionIndex < 12 
+                      : currentQuestionIndex < 13 
                         ? "阶段 III: 阴影与逆境应激" 
                         : "阶段 IV: 质性自陈与多维拓展"} 
                   &nbsp;• Question {currentQuestionIndex + 1} of {targetLength}
@@ -1042,7 +1160,7 @@ export default function App() {
                 <ArrowLeft className="w-4 h-4" /> 返回上一题
               </button>
               
-              {currentQuestionIndex === targetLength - 1 && targetLength < 150 ? (
+              {currentQuestionIndex === targetLength - 1 && targetLength < 100 ? (
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center justify-end">
                   <button 
                     onClick={() => {
@@ -1068,7 +1186,7 @@ export default function App() {
                     disabled={!isQuestionAnswered(activeQuestions[currentQuestionIndex])}
                     className="btn-premium px-6 py-3 text-sm font-medium rounded-xl inline-flex items-center justify-center gap-1.5 group disabled:opacity-50 w-full sm:w-auto"
                   >
-                    继续深度探测 (至 {targetLength === 25 ? 50 : targetLength === 50 ? 100 : 150} 题)
+                    继续深度探测 (至 {targetLength === 25 ? 50 : 100} 题)
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -1595,6 +1713,238 @@ export default function App() {
               </div>
             </div>
 
+            {/* NEW ADDITION: CAREER PLANNING & PARTNER COMPATIBILITY */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Career Advice Card */}
+              <div className="glass-container p-8 space-y-6">
+                <div className="space-y-1 border-b border-white-5 pb-4">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                    Career Planning & Roadmap
+                  </span>
+                  <h3 className="text-xl text-white font-bold inline-flex items-center gap-2">
+                    <Sliders className="w-5 h-5 text-indigo-400" /> 职业规划与心智潜能释放
+                  </h3>
+                </div>
+                
+                <p className="text-slate-350 text-sm font-light leading-relaxed">
+                  根据您的荣格八维主导与辅助功能（<strong>{results.primary.stack[0]} - {results.primary.stack[1]}</strong>）心智偏好，以下是为您量身定制的职业生涯规划与释放路径：
+                </p>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🎯 推荐高匹配职业方向：</h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {results.primary.careers && results.primary.careers.map((career, i) => (
+                      <span key={i} className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+                        {career}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-indigo-500/10 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-200">💡 职业成长秘诀：</h4>
+                  <p className="text-slate-400 text-xs font-light leading-relaxed">
+                    在工作中，请尽可能将您的首要心智功能 <strong>{results.primary.stack[0]}</strong> 作为核心破局点，用辅助功能 <strong>{results.primary.stack[1]}</strong> 做出客观刹车与调整。避免将自己长时间置于过度调用第四劣势功能 <strong>{results.primary.stack[3]}</strong> 的琐碎、高频变动的环境下，那会迅速诱发您的应激失控反应（Grip）。
+                  </p>
+                </div>
+              </div>
+
+              {/* Partner Compatibility Card */}
+              <div className="glass-container p-8 space-y-6">
+                <div className="space-y-1 border-b border-white-5 pb-4">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-500/10 border border-rose-500/30 text-rose-300">
+                    Relationship Compatibility
+                  </span>
+                  <h3 className="text-xl text-white font-bold inline-flex items-center gap-2">
+                    <Users className="w-5 h-5 text-rose-400" /> 伴侣契合度与灵魂共振画像
+                  </h3>
+                </div>
+
+                {results.primary.compatibilities && (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-rose-500/5 border border-rose-500/10">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase block">🔥 黄金契合伴侣 (Soulmate Match)</span>
+                        <span className="text-rose-300 font-display font-bold text-base mt-1 block">
+                          {results.primary.compatibilities.best}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold shrink-0">
+                        100% 灵魂同频
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🌟 极佳兼容伴侣类型：</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {results.primary.compatibilities.compatible.map((comp, i) => (
+                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white-5 border border-white-10 text-slate-350">
+                            {comp}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-950/60 border border-rose-500/10 space-y-2">
+                      <h4 className="text-xs font-bold text-slate-200">🔍 深度认知匹配逻辑：</h4>
+                      <p className="text-slate-400 text-xs font-light leading-relaxed">
+                        {results.primary.compatibilities.rationale}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* NEW ADDITION: 4th & 8th FUNCTION ANALYSIS (Beebe Depth Psychology) */}
+            {(() => {
+              const inferiorFuncCode = results.primary.stack[3]; // e.g. 'Se'
+              const inferiorQueryPrefix = `p3_inf_${inferiorFuncCode.toLowerCase()}_asp`;
+              const inferiorAnswerKey = Object.keys(answers).find(key => key.startsWith(inferiorQueryPrefix));
+              const inferiorAnswer = inferiorAnswerKey ? answers[inferiorAnswerKey]?.[0] : null; // 'A' or 'B'
+
+              const daemonFuncCode = results.primary.stack[7]; // e.g. 'Si'
+              const daemonQueryPrefix = `p3_dem_${daemonFuncCode.toLowerCase()}`;
+              const daemonAnswerKey = Object.keys(answers).find(key => key.startsWith(daemonQueryPrefix));
+              const daemonAnswer = daemonAnswerKey ? answers[daemonAnswerKey]?.[0] : null; // 'A' or 'B'
+
+              const infDetail = INFERIOR_ASPIRATION_DETAILS[inferiorFuncCode];
+              const demDetail = DAEMON_TAKEOVER_DETAILS[daemonFuncCode];
+
+              // Modulate scores for progress bars to feel dynamic
+              const infAspirationScore = inferiorAnswer === 'A' 
+                ? Math.round(75 + (results.scores[inferiorFuncCode] || 0) * 0.25)
+                : Math.round(15 + (results.scores[inferiorFuncCode] || 0) * 0.2);
+
+              const demTakeoverScore = daemonAnswer === 'A'
+                ? Math.round(80 + (results.scores[daemonFuncCode] || 0) * 0.2)
+                : Math.round(20 + (results.scores[daemonFuncCode] || 0) * 0.15);
+
+              return (
+                <div className="glass-container p-8 space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white-5 pb-4">
+                    <div className="space-y-1">
+                      <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-500/10 border border-pink-500/30 text-pink-400">
+                        Jungian Depth Psychology Deep Dive
+                      </span>
+                      <h3 className="text-xl text-white font-bold inline-flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-pink-400" /> 荣格心智深潜：第四功能渴望与第八功能应激黑化
+                      </h3>
+                    </div>
+                    <div className="text-xs text-indigo-400 font-bold tracking-wider uppercase font-display">
+                      Beebe 8-Function Dynamics
+                    </div>
+                  </div>
+
+                  <p className="text-slate-300 text-sm font-light leading-relaxed">
+                    在荣格与约翰·毕比（John Beebe）的八维心智模型中，<strong>第四功能（劣势/阿尼玛）</strong>与<strong>第八功能（魔鬼/至暗）</strong>构成了意识与潜意识中最具张力的两大维度。一个是心灵渴望成长与整合的婴儿通道，另一个则是人在面临绝境或巨大感情变故时的终极反噬防御。
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                    {/* Left Column: 4th Function (Inferior) */}
+                    <div className="p-6 rounded-2xl bg-slate-950/40 border border-white-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-[0.03] select-none pointer-events-none text-7xl font-black font-display uppercase">
+                        {inferiorFuncCode}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+                            第四功能 (阿尼玛 / 劣势)
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                            inferiorAnswer === 'A' ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border border-slate-700 text-slate-400'
+                          }`}>
+                            {inferiorAnswer === 'A' ? '已觉醒 (Active Aspiration)' : '潜伏期 (Latent)'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-white text-base font-bold flex items-center gap-2">
+                          <Award className="w-5 h-5 text-indigo-400" />
+                          {infDetail?.name} : {infDetail?.role}
+                        </h4>
+
+                        <p className="text-xs text-slate-500 leading-relaxed font-light italic">
+                          “第四功能像一个婴儿，需要用一辈子去温柔发展，但你会本能地渴望它，羡慕这个功能很强的人。”
+                        </p>
+
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex justify-between text-xs font-display">
+                            <span className="text-slate-400 font-medium">心智渴望整合度 (Aspiration Intensity):</span>
+                            <span className="text-white font-bold">{infAspirationScore}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full bg-gradient-to-r ${inferiorAnswer === 'A' ? 'from-indigo-500 to-emerald-400' : 'from-indigo-900 to-slate-700'}`}
+                              style={{ width: `${infAspirationScore}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="text-slate-300 text-xs font-light leading-relaxed pt-2 border-t border-white-5">
+                          {infDetail ? (
+                            inferiorAnswer === 'A' ? infDetail.A : infDetail.B
+                          ) : (
+                            "未捕获到针对第四功能的心理反馈，可能是自适应题集已被精简。建议继续进行深度探测。"
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: 8th Function (Daemon) */}
+                    <div className="p-6 rounded-2xl bg-slate-950/40 border border-white-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-[0.03] select-none pointer-events-none text-7xl font-black font-display uppercase">
+                        {daemonFuncCode}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-red-500/10 border border-red-500/20 text-red-400">
+                            第八功能 (魔鬼 / 至阴深谷)
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                            daemonAnswer === 'A' ? 'bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse' : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                          }`}>
+                            {daemonAnswer === 'A' ? '高易感 (Vulnerable Takeover)' : '稳健阻断 (Resistant)'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-white text-base font-bold flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-red-400" />
+                          {demDetail?.name} : {demDetail?.role}
+                        </h4>
+
+                        <p className="text-xs text-slate-500 leading-relaxed font-light italic">
+                          “人在遭遇重大感情变故或自尊毁灭后，会瞬间脱去日常人格面具，把第八功能摆到第一主导位置，代替原本的角色，展现出极端自卫、毁灭性或玉石俱焚的应激反噬。”
+                        </p>
+
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex justify-between text-xs font-display">
+                            <span className="text-slate-400 font-medium">重创应激黑化易感度 (Takeover Probability):</span>
+                            <span className="text-white font-bold">{demTakeoverScore}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full bg-gradient-to-r ${daemonAnswer === 'A' ? 'from-red-500 to-amber-500' : 'from-emerald-500 to-teal-400'}`}
+                              style={{ width: `${demTakeoverScore}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="text-slate-300 text-xs font-light leading-relaxed pt-2 border-t border-white-5">
+                          {demDetail ? (
+                            daemonAnswer === 'A' ? demDetail.A : demDetail.B
+                          ) : (
+                            "未捕获到针对第八功能的心理反馈，可能是自适应题集已被精简。建议继续进行深度探测。"
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* CRITICAL COGNITIVE CORRELATION: Mistyping Analysis (ISTJ vs INTJ, etc.) */}
             <div className="glass-container p-8 space-y-6">
               <div className="space-y-2">
@@ -1662,9 +2012,9 @@ export default function App() {
               <button onClick={startTest} className="btn-secondary px-8 flex items-center gap-1.5">
                 <RotateCcw className="w-4 h-4" /> 重新测试
               </button>
-              {targetLength < 150 && (
+              {targetLength < 100 && (
                 <button onClick={handleContinueFromResults} className="btn-premium px-8 flex items-center gap-1.5">
-                  继续深度探测 (至 {targetLength === 25 ? 50 : targetLength === 50 ? 100 : 150} 题) <ArrowRight className="w-4 h-4" />
+                  继续深度探测 (至 {targetLength === 25 ? 50 : 100} 题) <ArrowRight className="w-4 h-4" />
                 </button>
               )}
             </div>

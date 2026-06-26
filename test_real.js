@@ -44,7 +44,16 @@ axesConflicts.sort((a, b) => a.diff - b.diff);
 const conflictedAxis1 = axesConflicts[0].axis;
 const conflictedAxis2 = axesConflicts[1].axis;
 
-const p2Selected = getDynamicPhase2Questions(activeQuestions, conflictedAxis1, conflictedAxis2);
+const criticConflicts = [
+  { axis: "Ti_vs_Te", diff: Math.abs(currentScores.Ti - currentScores.Te) },
+  { axis: "Fi_vs_Fe", diff: Math.abs(currentScores.Fi - currentScores.Fe) },
+  { axis: "Ni_vs_Ne", diff: Math.abs(currentScores.Ni - currentScores.Ne) },
+  { axis: "Si_vs_Se", diff: Math.abs(currentScores.Si - currentScores.Se) }
+];
+criticConflicts.sort((a, b) => a.diff - b.diff);
+const conflictedCriticAxis = criticConflicts[0].axis;
+
+const p2Selected = getDynamicPhase2Questions(activeQuestions, conflictedAxis1, conflictedAxis2, conflictedCriticAxis);
 activeQuestions = [...activeQuestions.slice(0, 4), ...p2Selected];
 
 // Mock answers for Phase 2
@@ -86,7 +95,7 @@ if (leadingType1.type === "INTJ" || leadingType1.type === "INFJ") {
 }
 
 const p3Selected = getDynamicPhase3Questions(activeQuestions, shadowTargets);
-activeQuestions = [...activeQuestions.slice(0, 8), ...p3Selected];
+activeQuestions = [...activeQuestions.slice(0, 9), ...p3Selected];
 
 // Mock answers for Phase 3
 activeQuestions.forEach(q => {
@@ -97,7 +106,7 @@ activeQuestions.forEach(q => {
 
 // 4. Generate first 25 questions
 let targetLength = 25;
-const moreQs = generateProceduralQuestions(12, targetLength, conflictedAxis1, conflictedAxis2, shadowTargets, activeQuestions);
+const moreQs = generateProceduralQuestions(13, targetLength, conflictedAxis1, conflictedAxis2, shadowTargets, activeQuestions);
 activeQuestions = [...activeQuestions, ...moreQs];
 
 // Mock answers for Phase 4 (12 to 24)
