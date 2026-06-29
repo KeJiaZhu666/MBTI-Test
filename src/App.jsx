@@ -25,7 +25,8 @@ import {
   parseOpenEndedAnswer,
   getDynamicPhase1Questions,
   getDynamicPhase2Questions,
-  getDynamicPhase3Questions
+  getDynamicPhase3Questions,
+  BRANCHING_QUESTIONS
 } from './data/mbtiQuizData';
 import { PERSONALITY_DETAILS } from './data/personalityDetailData';
 
@@ -225,7 +226,7 @@ export default function App() {
     setActiveQuestions(updatedQs);
     
     // Set index to the start of the newly added questions
-    setCurrentQuestionIndex(targetLength);
+    setCurrentQuestionIndex(activeQuestions.length);
     setScreen('quiz');
   };
 
@@ -281,39 +282,111 @@ export default function App() {
       return;
     }
 
+    // Check if we should insert a branching follow-up question!
+    const userSelections = answers[currentQuestion.id] || [];
+    const selectedOptionId = userSelections[0];
+    let newQuestionsList = [...activeQuestions];
+
+    if (selectedOptionId) {
+      const baseCurrentId = currentQuestion.id.replace(/_idx_\d+$/, "");
+      let rootId = "";
+      let choiceKey = "";
+
+      if (currentQuestion.category === 'cognitive' && currentQuestion.type === 'single') {
+        const rootMatch = baseCurrentId.match(/^t_[a-z0-9_]+/);
+        if (rootMatch) {
+          rootId = rootMatch[0];
+          const selectedOption = currentQuestion.options.find(o => o.id === selectedOptionId);
+          if (selectedOption && selectedOption.weights) {
+            choiceKey = Object.keys(selectedOption.weights)[0];
+          }
+        }
+      } else if (currentQuestion.category === 'political' && currentQuestion.type === 'single') {
+        const rootMatch = baseCurrentId.match(/^tp_pol_[a-z0-9_]+/);
+        if (rootMatch) {
+          rootId = rootMatch[0];
+          choiceKey = selectedOptionId;
+        }
+      }
+
+      if (rootId && choiceKey && BRANCHING_QUESTIONS[rootId] && BRANCHING_QUESTIONS[rootId][choiceKey]) {
+        const nextQ = activeQuestions[currentQuestionIndex + 1];
+        const expectedBranchId = `${baseCurrentId}_branch_${choiceKey}_idx_${currentQuestionIndex + 1}`;
+
+        if (!nextQ || nextQ.id !== expectedBranchId) {
+          const rawBranchQ = BRANCHING_QUESTIONS[rootId][choiceKey];
+          const newBranchQ = {
+            id: expectedBranchId,
+            type: rawBranchQ.type,
+            category: rawBranchQ.category,
+            scenario: rawBranchQ.scenario,
+            description: rawBranchQ.description,
+            options: rawBranchQ.options.map(opt => ({ ...opt })),
+            phase: currentQuestion.phase
+          };
+
+          let deleteCount = 0;
+          if (nextQ && nextQ.id.startsWith(`${baseCurrentId}_branch_`)) {
+            deleteCount = 1;
+            const oldAnswers = { ...answers };
+            delete oldAnswers[nextQ.id];
+            setAnswers(oldAnswers);
+          }
+
+          newQuestionsList.splice(currentQuestionIndex + 1, deleteCount, newBranchQ);
+
+          // Re-index all subsequent questions to keep ID consistent
+          newQuestionsList = newQuestionsList.map((q, qIdx) => {
+            if (qIdx > currentQuestionIndex) {
+              const newId = q.id.replace(/_idx_\d+$/, `_idx_${qIdx}`);
+              return { ...q, id: newId };
+            }
+            return q;
+          });
+
+          setActiveQuestions(newQuestionsList);
+        }
+      }
+    }
+
+    // Find the last index of each phase in the updated questions list
+    let lastPhase1Idx = -1;
+    let lastPhase2Idx = -1;
+    let lastPhase3Idx = -1;
+    
+    newQuestionsList.forEach((q, idx) => {
+      if (q.phase === 1) lastPhase1Idx = idx;
+      else if (q.phase === 2) lastPhase2Idx = idx;
+      else if (q.phase === 3) lastPhase3Idx = idx;
+    });
+
     let hasTransitioned = false;
 
     // Trigger Adaptive Transitions
-    if (currentQuestionIndex === 3) {
+    if (currentQuestionIndex === lastPhase1Idx) {
       // Phase 1 finished! Generate Phase 2 (Adaptive Probing + Political Spectrum)
-      generatePhase2Questions();
+      generatePhase2Questions(newQuestionsList, lastPhase1Idx);
       hasTransitioned = true;
-    } else if (currentQuestionIndex === 8) {
+    } else if (currentQuestionIndex === lastPhase2Idx) {
       // Phase 2 finished! Generate Phase 3 (Shadow & Stress Probing)
-      generatePhase3Questions();
+      generatePhase3Questions(newQuestionsList, lastPhase2Idx);
       hasTransitioned = true;
-    } else if (currentQuestionIndex === 12) {
+    } else if (currentQuestionIndex === lastPhase3Idx) {
       // Phase 3 finished! Dynamically append procedural questions to reach targetLength (initially 25)
-      if (activeQuestions.length === 13) {
-        const moreQs = generateProceduralQuestions(13, targetLength, axesState.axis1, axesState.axis2, shadowState, activeQuestions);
-        setActiveQuestions([...activeQuestions, ...moreQs]);
+      if (newQuestionsList.length === lastPhase3Idx + 1) {
+        const moreQs = generateProceduralQuestions(lastPhase3Idx + 1, targetLength, axesState.axis1, axesState.axis2, shadowState, newQuestionsList);
+        setActiveQuestions([...newQuestionsList, ...moreQs]);
       }
       hasTransitioned = true;
     }
 
     if (hasTransitioned) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else if (currentQuestionIndex < activeQuestions.length - 1) {
+    } else if (currentQuestionIndex < newQuestionsList.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       // Reached the end of current active questions!
-      if (currentQuestionIndex === targetLength - 1) {
-        if (targetLength >= 100) {
-          calculateFinalResults();
-        }
-      } else {
-        calculateFinalResults();
-      }
+      calculateFinalResults();
     }
   };
 
@@ -339,7 +412,7 @@ export default function App() {
   };
 
   // Generate Phase 2 (Adaptive Probing - 5 questions) dynamically based on Phase 1 scores
-  const generatePhase2Questions = () => {
+  const generatePhase2Questions = (currentQuestionsList, lastPhase1Idx) => {
     const currentScores = computeIntermediateScores(answers);
     
     // Find the closest (most conflicted) axes
@@ -369,11 +442,21 @@ export default function App() {
 
     setAxesState({ axis1: conflictedAxis1, axis2: conflictedAxis2 });
 
-    const p2Selected = getDynamicPhase2Questions(activeQuestions, conflictedAxis1, conflictedAxis2, conflictedCriticAxis);
+    const p2Selected = getDynamicPhase2Questions(currentQuestionsList, conflictedAxis1, conflictedAxis2, conflictedCriticAxis);
 
     // Append to active questions
-    const updatedQuestions = [...activeQuestions.slice(0, 4), ...p2Selected];
-    setActiveQuestions(updatedQuestions);
+    const updatedQuestions = [...currentQuestionsList.slice(0, lastPhase1Idx + 1), ...p2Selected];
+    
+    // Re-index Phase 2 questions
+    const reindexedQuestions = updatedQuestions.map((q, qIdx) => {
+      if (qIdx > lastPhase1Idx) {
+        const newId = q.id.replace(/_idx_\d+$/, `_idx_${qIdx}`);
+        return { ...q, id: newId };
+      }
+      return q;
+    });
+
+    setActiveQuestions(reindexedQuestions);
 
     const axisChMap = {
       Ni_vs_Si: "内倾直觉(Ni) 与 内倾感觉(Si) 的经验虚实纠缠",
@@ -390,7 +473,7 @@ export default function App() {
   };
 
   // Generate Phase 3 (Shadow & Stress Probing - 4 questions) dynamically based on Phase 2 results
-  const generatePhase3Questions = () => {
+  const generatePhase3Questions = (currentQuestionsList, lastPhase2Idx) => {
     const tempScores = computeIntermediateScores(answers);
 
     // Fit temporary scores to find top personality fits
@@ -425,10 +508,20 @@ export default function App() {
       shadowTargets.push("Ni_Inferior_or_Blind", "Ti_Inferior_or_Blind");
     }
 
-    const p3Selected = getDynamicPhase3Questions(activeQuestions, shadowTargets);
+    const p3Selected = getDynamicPhase3Questions(currentQuestionsList, shadowTargets);
 
-    const updatedQuestions = [...activeQuestions.slice(0, 9), ...p3Selected];
-    setActiveQuestions(updatedQuestions);
+    const updatedQuestions = [...currentQuestionsList.slice(0, lastPhase2Idx + 1), ...p3Selected];
+    
+    // Re-index Phase 3 questions
+    const reindexedQuestions = updatedQuestions.map((q, qIdx) => {
+      if (qIdx > lastPhase2Idx) {
+        const newId = q.id.replace(/_idx_\d+$/, `_idx_${qIdx}`);
+        return { ...q, id: newId };
+      }
+      return q;
+    });
+
+    setActiveQuestions(reindexedQuestions);
     setShadowState(shadowTargets);
 
     setInterrogationFeedbacks([
@@ -1010,23 +1103,23 @@ export default function App() {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-indigo-400 font-display font-semibold uppercase tracking-wider">
-                  {currentQuestionIndex < 4 
+                  {activeQuestions[currentQuestionIndex].phase === 1 
                     ? "阶段 I: 基础场景解构" 
-                    : currentQuestionIndex < 9 
+                    : activeQuestions[currentQuestionIndex].phase === 2 
                       ? "阶段 II: 自适应分流探测" 
-                      : currentQuestionIndex < 13 
+                      : activeQuestions[currentQuestionIndex].phase === 3 
                         ? "阶段 III: 阴影与逆境应激" 
                         : "阶段 IV: 质性自陈与多维拓展"} 
-                  &nbsp;• Question {currentQuestionIndex + 1} of {targetLength}
+                  &nbsp;• Question {currentQuestionIndex + 1} of {activeQuestions.length}
                 </span>
                 <span className="text-slate-400 font-medium">
-                  已完成 {Math.round(((currentQuestionIndex + 1) / targetLength) * 100)}%
+                  已完成 {Math.round(((currentQuestionIndex + 1) / activeQuestions.length) * 100)}%
                 </span>
               </div>
               <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentQuestionIndex + 1) / targetLength) * 100}%` }}
+                  style={{ width: `${((currentQuestionIndex + 1) / activeQuestions.length) * 100}%` }}
                 ></div>
               </div>
             </div>
@@ -1160,7 +1253,7 @@ export default function App() {
                 <ArrowLeft className="w-4 h-4" /> 返回上一题
               </button>
               
-              {currentQuestionIndex === targetLength - 1 && targetLength < 100 ? (
+              {currentQuestionIndex === activeQuestions.length - 1 && (activeQuestions[currentQuestionIndex].phase !== 1 && activeQuestions[currentQuestionIndex].phase !== 2 && activeQuestions[currentQuestionIndex].phase !== 3) && targetLength < 100 ? (
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center justify-end">
                   <button 
                     onClick={() => {
@@ -1196,7 +1289,7 @@ export default function App() {
                   disabled={!isQuestionAnswered(activeQuestions[currentQuestionIndex])}
                   className="btn-premium px-8 py-3 disabled:opacity-50 inline-flex items-center gap-1.5 w-full md:w-auto justify-center"
                 >
-                  {currentQuestionIndex === targetLength - 1 ? (
+                  {currentQuestionIndex === activeQuestions.length - 1 && (activeQuestions[currentQuestionIndex].phase !== 1 && activeQuestions[currentQuestionIndex].phase !== 2 && activeQuestions[currentQuestionIndex].phase !== 3) ? (
                     <>生成终极心智报告 <Sparkles className="w-4 h-4 text-indigo-400" /></>
                   ) : (
                     <>确认并进行下一步 <ArrowRight className="w-4 h-4" /></>

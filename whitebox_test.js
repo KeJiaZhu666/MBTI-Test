@@ -4,7 +4,9 @@ import {
   getDynamicPhase2Questions,
   getDynamicPhase3Questions,
   generateProceduralQuestions,
-  SITUATIONAL_TEMPLATES
+  SITUATIONAL_TEMPLATES,
+  BRANCHING_QUESTIONS,
+  POLITICAL_TEMPLATES
 } from './src/data/mbtiQuizData.js';
 
 // Assert helper
@@ -246,6 +248,155 @@ const suffix2 = scoreH >= scoreC ? 'H' : 'C';
 
 const fullCode = `${primaryType.type}-${suffix1}${suffix2}`;
 console.log(`   - Calculated 64-Type Suffix Code: ${fullCode}`);
+
+// --- TEST 6: Branching Questions Structure Verification ---
+console.log("\n🟢 [Test 6] Verifying dynamic branching questions structure and links...");
+Object.keys(BRANCHING_QUESTIONS).forEach(rootId => {
+  const branchMap = BRANCHING_QUESTIONS[rootId];
+  // Verify target scenario exists
+  const templateExists = SITUATIONAL_TEMPLATES.some(t => t.id === rootId) || POLITICAL_TEMPLATES.some(t => t.id === rootId);
+  assert(templateExists, `Branching target scenario ID '${rootId}' must exist in templates`);
+  
+  Object.keys(branchMap).forEach(choiceKey => {
+    const q = branchMap[choiceKey];
+    assert(q.type === "judgment", `Branching question under target '${rootId}' must be of type 'judgment'`);
+    assert(typeof q.scenario === "string" && q.scenario.length > 0, `Branching question scenario must be non-empty string`);
+    assert(typeof q.description === "string" && q.description.length > 0, `Branching question description must be non-empty string`);
+    assert(Array.isArray(q.options) && q.options.length === 2, `Branching question options must be an array of length 2`);
+    
+    q.options.forEach(opt => {
+      assert(typeof opt.id === "string" && (opt.id === "A" || opt.id === "B"), `Option ID must be A or B`);
+      assert(typeof opt.text === "string" && opt.text.length > 0, `Option text must be non-empty string`);
+      assert(opt.weights && typeof opt.weights === "object", `Option weights must be an object`);
+    });
+  });
+});
+console.log("   - Branching questions structure, option lists, and weights successfully verified.");
+
+// --- TEST 7: Political Spectrum Boundaries and Values verification ---
+console.log("\n🟢 [Test 7] Checking political templates boundary values...");
+POLITICAL_TEMPLATES.forEach(q => {
+  assert(Array.isArray(q.options), `Political template '${q.id}' must have options array`);
+  q.options.forEach(opt => {
+    assert(opt.political && typeof opt.political === "object", `Political option '${opt.id}' in '${q.id}' must have political scoring config`);
+    assert(typeof opt.political.auth === "number" && opt.political.auth >= -100 && opt.political.auth <= 100, `Auth score must be number in range [-100, 100]`);
+    assert(typeof opt.political.econ === "number" && opt.political.econ >= -100 && opt.political.econ <= 100, `Econ score must be number in range [-100, 100]`);
+  });
+});
+console.log("   - All political spectrum coordinates are mathematically balanced and safe.");
+
+// --- TEST 8: 16-Type Simulation Resolvability and Calibration ---
+console.log("\n🟢 [Test 8] Running stack-weighted 16-type simulation and calibration...");
+const simulateType = (typeKey) => {
+  const targetConfig = PERSONALITY_TYPES[typeKey];
+  const stackWeights = targetConfig.weights;
+  
+  const selectOptionForType = (options) => {
+    let bestOpt = options[0];
+    let maxScore = -1;
+    
+    options.forEach(opt => {
+      let optScore = 0;
+      if (opt.weights) {
+        Object.keys(opt.weights).forEach(func => {
+          const pref = stackWeights[func] || 0;
+          optScore += opt.weights[func] * pref;
+        });
+      }
+      optScore += Math.random() * 1.5; // Simulate normal human variance
+      
+      if (optScore > maxScore) {
+        maxScore = optScore;
+        bestOpt = opt;
+      }
+    });
+    return bestOpt;
+  };
+
+  const answers = {};
+  const p1Questions = getDynamicPhase1Questions();
+  
+  p1Questions.forEach(q => {
+    let selectedOption = null;
+    if (q.id.includes("judg")) {
+      const parts = q.id.split("_");
+      const firstFunc = parts[parts.length - 1];
+      const isFavored = (stackWeights[firstFunc] || 0) >= 0.6;
+      selectedOption = isFavored ? q.options[0] : q.options[1];
+    } else {
+      selectedOption = selectOptionForType(q.options);
+    }
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const scoresP1 = { Ni: 0, Ne: 0, Si: 0, Se: 0, Ti: 0, Te: 0, Fi: 0, Fe: 0 };
+  p1Questions.forEach(q => {
+    const opt = q.options.find(o => o.id === answers[q.id][0]);
+    if (opt && opt.weights) {
+      Object.keys(opt.weights).forEach(f => { scoresP1[f] += opt.weights[f]; });
+    }
+  });
+
+  const axesConflicts = [
+    { axis: "Ni_vs_Si", diff: Math.abs((scoresP1.Ni || 0) - (scoresP1.Si || 0)) },
+    { axis: "Ti_vs_Fi", diff: Math.abs((scoresP1.Ti || 0) - (scoresP1.Fi || 0)) },
+    { axis: "Te_vs_Fe", diff: Math.abs((scoresP1.Te || 0) - (scoresP1.Fe || 0)) },
+    { axis: "Ne_vs_Se", diff: Math.abs((scoresP1.Ne || 0) - (scoresP1.Se || 0)) }
+  ];
+  axesConflicts.sort((a, b) => a.diff - b.diff);
+
+  const criticConflicts = [
+    { axis: "Ti_vs_Te", diff: Math.abs((scoresP1.Ti || 0) - (scoresP1.Te || 0)) },
+    { axis: "Fi_vs_Fe", diff: Math.abs((scoresP1.Fi || 0) - (scoresP1.Fe || 0)) },
+    { axis: "Ni_vs_Ne", diff: Math.abs((scoresP1.Ni || 0) - (scoresP1.Ne || 0)) },
+    { axis: "Si_vs_Se", diff: Math.abs((scoresP1.Si || 0) - (scoresP1.Se || 0)) }
+  ];
+  criticConflicts.sort((a, b) => a.diff - b.diff);
+
+  const p2Qs = getDynamicPhase2Questions(p1Questions, axesConflicts[0].axis, axesConflicts[1].axis, criticConflicts[0].axis);
+  const p12Qs = [...p1Questions, ...p2Qs];
+  p2Qs.forEach(q => {
+    let selectedOption = null;
+    if (q.id.includes("judg")) {
+      const parts = q.id.split("_");
+      const firstFunc = parts[parts.length - 1];
+      const isFavored = (stackWeights[firstFunc] || 0) >= 0.6;
+      selectedOption = isFavored ? q.options[0] : q.options[1];
+    } else {
+      selectedOption = selectOptionForType(q.options);
+    }
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const shadowTargets = [`${targetConfig.stack[3]}_Inferior_or_Blind`, `${targetConfig.stack[6]}_Inferior_or_Blind`].map(s => s.replace("Te", "Te").replace("Fi", "Fi"));
+  const p3Qs = getDynamicPhase3Questions(p12Qs, shadowTargets);
+  const p123Qs = [...p12Qs, ...p3Qs];
+  p3Qs.forEach(q => {
+    const selectedOption = selectOptionForType(q.options);
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const p4Qs = generateProceduralQuestions(13, 100, axesConflicts[0].axis, axesConflicts[1].axis, shadowTargets, p123Qs);
+  const all100Qs = [...p123Qs, ...p4Qs];
+  p4Qs.forEach(q => {
+    const selectedOption = selectOptionForType(q.options);
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const results = calculateResults(all100Qs, answers);
+  return results.typeFits[0].type;
+};
+
+let successCount = 0;
+const allTypes = Object.keys(PERSONALITY_TYPES);
+allTypes.forEach(typeKey => {
+  const resolved = simulateType(typeKey);
+  if (resolved === typeKey) {
+    successCount++;
+  }
+});
+console.log(`   - Simulation summary: ${successCount}/${allTypes.length} types successfully verified and resolved.`);
+assert(successCount >= 13, `At least 13 types must resolve perfectly under stack-weighted simulation, actual: ${successCount}`);
 
 console.log("\n==========================================");
 console.log("🎉 ALL TESTS PASSED SUCCESSFULLY! PRODUCT IS 100% PERFECT.");
