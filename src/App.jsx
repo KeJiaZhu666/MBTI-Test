@@ -835,7 +835,7 @@ export default function App() {
             fontWeight={isFocused ? "700" : "600"}
             style={{ transition: 'all 0.3s', fontFamily: 'var(--font-display)' }}
           >
-            {func} ({score}%)
+            {func} (Lv.{Math.max(1, Math.min(99, Math.round((score / 100) * 98) + 1))})
           </text>
           <text 
             x={x} 
@@ -1325,7 +1325,7 @@ export default function App() {
               </div>
 
               <p className="text-slate-300 text-sm md:text-base font-light leading-relaxed max-w-3xl mx-auto pt-2">
-                作为 <strong>{results.primary.name} ({results.primary.title})</strong> 底色心智者，结合您高频在现实中的行动调控与人际投射，您展现出了 <strong>{SUFFIX_64_INFO[results.suffix1 + results.suffix2]?.tagline || ''}</strong> 的高阶特质。
+                作为 <strong>{results.primary.type} ({results.primary.title})</strong> 底色心智者，结合您高频在现实中的行动调控与人际投射，您展现出了 <strong>{SUFFIX_64_INFO[results.suffix1 + results.suffix2]?.tagline || ''}</strong> 的高阶特质。
                 {SUFFIX_64_INFO[results.suffix1 + results.suffix2]?.description || ''}
               </p>
 
@@ -1394,6 +1394,7 @@ export default function App() {
                     </span>
                     <span className="text-xs text-slate-400 font-medium font-display">
                       拟合强度: <strong className="text-white text-sm">{results.scores[selectedFunc] || 0}%</strong>
+                      <span className="ml-2 text-indigo-400">等级: <strong>Lv.{Math.max(1, Math.min(99, Math.round(((results.scores[selectedFunc] || 0) / 100) * 98) + 1))}</strong></span>
                     </span>
                   </div>
 
@@ -1430,15 +1431,15 @@ export default function App() {
                         }
                         
                         // TJ Fe Trickster check
-                        if (selectedFunc === 'Fe' && prim.name.includes('TJ')) {
+                        if (selectedFunc === 'Fe' && prim.type.endsWith('TJ')) {
                           return `【第七小丑(Trickster)盲区】作为典型的 TJ 脑，您本能排斥 Fe。您可能会固执地认为“人情社交、和稀泥、客套礼貌都是极其低效和虚伪的”，这导致您容易被社会群体贴上冷酷或孤僻的标签。`;
                         }
                         // NJ Si Demon check
-                        if (selectedFunc === 'Si' && prim.name.includes('NJ')) {
+                        if (selectedFunc === 'Si' && prim.type.includes('N') && prim.type.endsWith('J')) {
                           return `【第八魔鬼(Demon)功能】作为 NJ 前瞻直觉者，Si 是您的最阴暗死角。您极度反感一成不变的传统细节与历史约束，极易丢三落四、忽视自己身体的亚健康信号，将规程妖魔化。`;
                         }
                         // SJ Ni Demon check
-                        if (selectedFunc === 'Ni' && prim.name.includes('SJ')) {
+                        if (selectedFunc === 'Ni' && prim.type.includes('S') && prim.type.endsWith('J')) {
                           return `【第八魔鬼(Demon)功能】作为 SJ 传统经验维护者，Ni 是您的最阴暗死角。您极度警惕任何毫无实物与数据支撑的“空洞概念、玄学大师预言”或不切实际的颠覆。`;
                         }
 
@@ -1866,6 +1867,48 @@ export default function App() {
                         100% 灵魂同频
                       </span>
                     </div>
+
+                    {/* NEW ADDITION: Least Compatible Conflict Match */}
+                    {(() => {
+                      const userType = results.primary.type;
+                      const userStack = results.primary.stack;
+                      const seventhFunc = userStack[6];
+
+                      // Find candidate types that have seventhFunc as dominant (stack[0])
+                      const candidates = Object.keys(PERSONALITY_TYPES).filter(t => PERSONALITY_TYPES[t].stack[0] === seventhFunc);
+
+                      // Filter the conflict type that shares exactly 0 functions in top 4 with user (true Socionics conflict)
+                      const conflictType = candidates.find(t => {
+                        const candTop4 = PERSONALITY_TYPES[t].stack.slice(0, 4);
+                        const userTop4 = userStack.slice(0, 4);
+                        return !candTop4.some(f => userTop4.includes(f));
+                      }) || candidates[0];
+
+                      const conflictTitle = PERSONALITY_TYPES[conflictType].title.split(' / ')[0];
+                      const conflictText = `${conflictType} (${conflictTitle})`;
+                      
+                      return (
+                        <>
+                          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                            <div>
+                              <span className="text-[10px] text-slate-500 font-bold uppercase block">⚡ 认知盲区冲突伴侣 (Least Compatible Match)</span>
+                              <span className="text-red-400 font-display font-bold text-base mt-1 block">
+                                {conflictText}
+                              </span>
+                            </div>
+                            <span className="px-2.5 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold shrink-0">
+                              盲区对立 / 极易摩擦
+                            </span>
+                          </div>
+                          <div className="p-4 rounded-xl bg-slate-950/60 border border-red-500/10 space-y-1">
+                            <h4 className="text-xs font-bold text-slate-200">⚠️ 冲突与内耗根源：</h4>
+                            <p className="text-slate-400 text-xs font-light leading-relaxed">
+                              根据 Socionics 社会人格学认知冲突模型，对方的主要心智（第一主导功能）恰好落在您的<strong>第七功能（小丑/盲区：{seventhFunc}）</strong>上，且双方前四维心智通道完全没有交集。对方最自然的行为方式与关注点（如 {COGNITIVE_FUNCTIONS_INFO[seventhFunc]?.chineseName || seventhFunc}），在您的认知框架里是您最习惯以戏谑、忽视或本能排斥对待的领域。双方极易因为理解鸿沟和沟通视角的根本对立而产生难以调和的心智内耗。
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🌟 极佳兼容伴侣类型：</h4>

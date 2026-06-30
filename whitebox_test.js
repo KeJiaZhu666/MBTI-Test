@@ -398,6 +398,142 @@ allTypes.forEach(typeKey => {
 console.log(`   - Simulation summary: ${successCount}/${allTypes.length} types successfully verified and resolved.`);
 assert(successCount >= 13, `At least 13 types must resolve perfectly under stack-weighted simulation, actual: ${successCount}`);
 
+
+// --- TEST 8.5: Humanitarian-INTP calibration test ---
+console.log("\n🟢 [Test 8.5] Running humanitarian-INTP calibration test...");
+const simulateHumanitarianINTP = () => {
+  const targetConfig = PERSONALITY_TYPES.INTP;
+  const stackWeights = targetConfig.weights;
+  
+  const selectOptionForType = (options, isPolitical = false) => {
+    if (isPolitical) {
+      // Prioritize choices having Ti and Fi/Fe weights
+      let bestOpt = options[0];
+      let maxScore = -1;
+      options.forEach(opt => {
+        let score = 0;
+        if (opt.weights) {
+          if (opt.weights.Ti && (opt.weights.Fi || opt.weights.Fe)) {
+            score += 10;
+          }
+          score += (opt.weights.Ti || 0) + (opt.weights.Fi || 0) + (opt.weights.Fe || 0);
+        }
+        if (score > maxScore) {
+          maxScore = score;
+          bestOpt = opt;
+        }
+      });
+      return bestOpt;
+    }
+    
+    let bestOpt = options[0];
+    let maxScore = -1;
+    options.forEach(opt => {
+      let optScore = 0;
+      if (opt.weights) {
+        Object.keys(opt.weights).forEach(func => {
+          const pref = stackWeights[func] || 0;
+          optScore += opt.weights[func] * pref;
+        });
+      }
+      optScore += Math.random() * 1.5;
+      if (optScore > maxScore) {
+        maxScore = optScore;
+        bestOpt = opt;
+      }
+    });
+    return bestOpt;
+  };
+
+  const answers = {};
+  const p1Questions = getDynamicPhase1Questions();
+  p1Questions.forEach(q => {
+    let selectedOption = null;
+    if (q.id.includes("judg")) {
+      const parts = q.id.split("_");
+      const firstFunc = parts[parts.length - 1];
+      const isFavored = (stackWeights[firstFunc] || 0) >= 0.6;
+      selectedOption = isFavored ? q.options[0] : q.options[1];
+    } else {
+      selectedOption = selectOptionForType(q.options, q.id.startsWith("tp_"));
+    }
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const scoresP1 = { Ni: 0, Ne: 0, Si: 0, Se: 0, Ti: 0, Te: 0, Fi: 0, Fe: 0 };
+  p1Questions.forEach(q => {
+    const opt = q.options.find(o => o.id === answers[q.id][0]);
+    if (opt && opt.weights) {
+      Object.keys(opt.weights).forEach(f => { scoresP1[f] += opt.weights[f]; });
+    }
+  });
+
+  const axesConflicts = [
+    { axis: "Ni_vs_Si", diff: Math.abs((scoresP1.Ni || 0) - (scoresP1.Si || 0)) },
+    { axis: "Ti_vs_Fi", diff: Math.abs((scoresP1.Ti || 0) - (scoresP1.Fi || 0)) },
+    { axis: "Te_vs_Fe", diff: Math.abs((scoresP1.Te || 0) - (scoresP1.Fe || 0)) },
+    { axis: "Ne_vs_Se", diff: Math.abs((scoresP1.Ne || 0) - (scoresP1.Se || 0)) }
+  ];
+  axesConflicts.sort((a, b) => a.diff - b.diff);
+
+  const criticConflicts = [
+    { axis: "Ti_vs_Te", diff: Math.abs((scoresP1.Ti || 0) - (scoresP1.Te || 0)) },
+    { axis: "Fi_vs_Fe", diff: Math.abs((scoresP1.Fi || 0) - (scoresP1.Fe || 0)) },
+    { axis: "Ni_vs_Ne", diff: Math.abs((scoresP1.Ni || 0) - (scoresP1.Ne || 0)) },
+    { axis: "Si_vs_Se", diff: Math.abs((scoresP1.Si || 0) - (scoresP1.Se || 0)) }
+  ];
+  criticConflicts.sort((a, b) => a.diff - b.diff);
+
+  const p2Qs = getDynamicPhase2Questions(p1Questions, axesConflicts[0].axis, axesConflicts[1].axis, criticConflicts[0].axis);
+  const p12Qs = [...p1Questions, ...p2Qs];
+  p2Qs.forEach(q => {
+    let selectedOption = null;
+    if (q.id.includes("judg")) {
+      const parts = q.id.split("_");
+      const firstFunc = parts[parts.length - 1];
+      const isFavored = (stackWeights[firstFunc] || 0) >= 0.6;
+      selectedOption = isFavored ? q.options[0] : q.options[1];
+    } else {
+      selectedOption = selectOptionForType(q.options, q.id.startsWith("tp_"));
+    }
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const shadowTargets = [`${targetConfig.stack[3]}_Inferior_or_Blind`, `${targetConfig.stack[6]}_Inferior_or_Blind`].map(s => s.replace("Te", "Te").replace("Fi", "Fi"));
+  const p3Qs = getDynamicPhase3Questions(p12Qs, shadowTargets);
+  const p123Qs = [...p12Qs, ...p3Qs];
+  p3Qs.forEach(q => {
+    const selectedOption = selectOptionForType(q.options, q.id.startsWith("tp_"));
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const p4Qs = generateProceduralQuestions(13, 100, axesConflicts[0].axis, axesConflicts[1].axis, shadowTargets, p123Qs);
+  const all100Qs = [...p123Qs, ...p4Qs];
+  p4Qs.forEach(q => {
+    const selectedOption = selectOptionForType(q.options, q.id.startsWith("tp_"));
+    answers[q.id] = [selectedOption.id];
+  });
+
+  const results = calculateResults(all100Qs, answers);
+  const primaryType = results.typeFits[0];
+  const ns = results.normalizedScores;
+  
+  const scoreA = ns.Te * 0.4 + ns.Se * 0.3 + ns.Ni * 0.3;
+  const scoreO = ns.Ti * 0.4 + ns.Si * 0.3 + ns.Ne * 0.3;
+  const suffix1 = scoreA >= scoreO ? 'A' : 'O';
+
+  const scoreH = ns.Fe + ns.Fi;
+  const scoreC = ns.Te + ns.Ti;
+  const suffix2 = scoreH >= scoreC ? 'H' : 'C';
+  
+  const fullCode = `${primaryType.type}-${suffix1}${suffix2}`;
+  console.log(`   - Humanitarian INTP resolved to: ${fullCode}`);
+  
+  assert(primaryType.type === "INTP" || primaryType.type === "ISTP", `Humanitarian INTP must resolve to Ti-dominant INTP or ISTP, actual: ${primaryType.type}`);
+  assert(fullCode === "INTP-OC" || fullCode === "INTP-OH" || fullCode === "ISTP-OC" || fullCode === "ISTP-OH", `Humanitarian INTP suffix must be OC or OH, actual: ${fullCode}`);
+};
+simulateHumanitarianINTP();
+
 console.log("\n==========================================");
 console.log("🎉 ALL TESTS PASSED SUCCESSFULLY! PRODUCT IS 100% PERFECT.");
 console.log("==========================================");
